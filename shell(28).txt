@@ -1,0 +1,743 @@
+udp测试：
+nc -vuz 10.168.35.166 123
+
+
+统计端口连接数：
+netstat -nat | grep -iw "11575" | wc -l
+
+
+创建swap分区：
+dd if=/dev/zero of=/data/swap bs=1M count=2048
+mkswap -f /data/swap
+swapon /data/swap
+vim /etc/fstab
+#/data/swap                   swap                    swap    defaults        0 2
+vim /etc/sysctl.conf
+# vm.swappiness = 100
+sysctl -p
+
+swapoff /swap
+
+. /etc/profile;/bin/sh /root/bash/unwall.sh
+
+iftop -P -n -N -i eth1
+
+/dev/xvdf   /data       ext4    defaults        0   0
+
+统计java进程的内存使用总量：
+for m in `top -b -n1|grep java|grep -v grep|awk '{print $1}'`;do pmap -d $m|sed -n '$p';echo "`ps -ef|grep $m|grep -v grep`" ;done
+
+取ip封掉：
+for i in `awk '{print $8}' farm.log.20171121171558|sort -n|uniq -c | sort -rn |awk '{print $2}'|head -n 50`;do iptables -I INPUT -s $i -p all -j DROP;done
+
+提取上下行速率：
+sar -n DEV|tac|sed -n '4,6p'|grep -i eth1|awk '{print $6,$7}'
+
+
+pmap -d pid  内存具体用量（writeable/private）
+
+
+系统内核日志：
+/var/log/message
+OOM机制
+
+修改时区：
+tzselect
+/etc/sysconfig/clock         ZONE=Asia/Shanghai
+rm /etc/localtime
+ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
+
+几核处理器：
+grep 'model name' /proc/cpuinfo | wc -l
+
+
+kill僵尸进程：
+for i in `ps -ef|grep defunct|awk '{print $3}'|xargs`
+do
+	kill -9 $i
+done
+
+
+本机公网ip:
+curl ifconfig.me
+
+
+设置程序开机自启动：
+例：
+vim /etc/rc.local
+追加 
+nohup python /root/cmd.py &
+
+
+
+查看连接次数最多的ip：
+awk '{print $2}' access.log | sort -n |uniq -c | sort -rn | head -n 10
+
+检查开放端口：
+netstat -antp|grep -i 'listen'|awk '{print $4}'|awk -F: '{print $2}'|sort -n
+
+
+FTP自动登录:
+logServer=10.212.222.66
+logname=testbmc
+logpassword='1qaz2wsx#EDC$RFV'
+port=21
+ftp -n $logServer $port>>/tmp/trans.log<<End-Of-Session
+user "${logname}" "${logpassword}"
+binary
+cd /
+lcd /tmp/bmcfenghui
+prompt
+mput *
+bye
+!
+End-Of-Session
+echo "ftp success!"
+
+
+
+
+配置yum源：
+wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
+sed -i  's/$releasever/7/g' /etc/yum.repos.d/CentOS-Base.repo
+sed -i  's/$releasever/7/g' /etc/yum.repos.d/CentOS-Base.repo
+
+
+
+RHEL7.2配置本地yum源
+
+[root@localhost ~]#monut /dev/sr0 /mnt      #挂载光盘
+
+[root@localhost ~]# rm -rf /etc/yum.repos.d/*
+
+[root@localhost ~]# vim /etc/yum.repos.d/rhel7.repo
+
+[rhel7-yum]                                              #yum源名称，唯一的，用来区分不同的yum源
+
+name=rhel7-source                                   #对yum源描述信息
+
+baseurl=file:///mnt                                    #yum源的路径（repodata目录所在的目录）
+
+enabled=1                                                #为1，表示启用yum源
+
+gpgcheck=0                                              #为1，使用公钥检验rpm的正确性
+
+
+
+
+回退：
+rpm -Uvh --oldpackage xxx
+
+
+删除指定包：
+rpm -qa|grep yum|xargs rpm -e --nodeps
+
+
+一列相加：
+df -Pi|sed '1d'|awk '{print $5}'|awk '{a+=$1}END{print a}'
+
+
+加减：
+for((i=1;i<10;++i))
+do
+  for((j=1;j<=$i;++j)) 
+  do
+    echo -n -e "$j+$i=`expr $i + $j`\t"
+  done
+  echo -e "\n"
+done
+
+
+删除行首空格：
+lsb_release -a|grep -i ^release|awk -F: '{print $2}'|sed  's/^[\t]*//g'
+
+删除空行：
+sed -i '/^$/d' input.txt
+
+判断CPU型号:
+#!/bin/bash
+str1=`cat /proc/cpuinfo |grep name|uniq|awk -F: '{print $2}'|awk '{print $4}'|awk -F- '{print $1}'`
+case $str1 in
+E5)
+        echo "Result:0 T,$str1;";;
+E5v2)
+        echo "Result:0 T,$str1;";;
+E7v2)
+        echo "Result:0 T,$str1;";;
+*)
+        echo "Result:0 F;";;
+esac
+
+
+文件夹中文件的修改时间：
+#!/bin/bash
+cd /
+for doc in `ls -l|grep "^d"|grep -v "root$"|awk '{print $NF}'`;
+do 
+        date -d "`ls --full-time /|grep -w $doc | awk '{print $6,$7}'| awk -F . '{print $1}'`" +%s
+done
+
+
+
+文件夹中文件的修改时间：
+#!/bin/bash
+cd /
+for doc in `ls -l|grep "^-"|awk '{print $NF}'`;
+do
+        date -d "`ls -al --full-time $doc | grep "^-"  | awk '{print $6,$7}'| awk -F . '{print $1}'`" +%s
+done
+
+
+连接两个字符串：
+v3=${v1}${v2}
+
+
+num1=`ntpq -p|awk '{print $1}'|sed '1,2d'|grep "^\*"`
+num2=`ntpq -p|awk '{print $0}'|sed '1,2d'|grep "^\*"|awk '{print $7}'`
+if [[  (-z $num) && ($num2 -ne 0)  ]]
+then 
+	echo "Reslut:0 T;"
+else 
+	echo "Reslut:0 F;"
+fi
+
+
+
+某一进程使用的cpu总量：
+num=`top -b n1 c| grep ZDH#@ZDH1|awk '{print $9}'|wc -l`
+reslut=`top -b n1 c| grep ZDH#@ZDH1|awk '{print $9}'`
+sum=0.0
+for ((i=1;i<$num;i++));
+do 
+	add=`echo "$reslut"|sed -n "$i p"|bc`
+	sum=`echo "$sum + $add"|bc`
+done
+echo "Reslut:2 $sum%;"
+
+
+
+
+查看僵尸进程数：
+top -b | head -n 2 | grep zombie | awk '{print $(NF-1),$NF}'
+
+sed获取尾行：
+sed -n '$p'
+
+
+打印某一列之后的所有列：
+uptime|awk -F, '{for(i=1;i<=3;i++){$i=""};print $0}'
+
+
+打印倒数第二列：
+uptime|awk -F, '{print $(NF-1),$NF}'
+
+
+
+#!/bin/bash
+num=`wc -l 2.txt|awk '{ print $1 }'`
+for ((i=1;i<$num;i++));
+do
+        code=`sed -n "$i p" 2.txt`
+        echo "`cat 1.txt|grep "$code"`"
+done
+
+
+
+替换以xxx开头***结尾的行：
+sed -i 's/^i.*s/ /' ceshi.py
+
+
+
+修改系统默认时区为Asia/Shanghai:
+sed -i 's/".*"/"Asia\/Shanghai"/' /etc/sysconfig/clock
+
+
+
+修改系统默认语言：
+count=`cat /etc/sysconfig/i18n|grep -i -E 'LANG="en_US.UTF-8"|SYSFONT="latarcyrheb-sun16"'|wc -l`
+if [ $count -eq 2 ]
+then echo "T"
+else sed -i '/^LANG/d;/^SYSFONT/d;' /etc/sysconfig/i18n
+echo -e 'LANG="en_US.UTF-8"\nSYSFONT="latarcyrheb-sun16"'>> /etc/sys
+
+
+
+主机名命名要求：
+if grep 'ZJHZ-[[:alnum:]]-[[alnum]]' <<< cat /etc/sysconfig/network|sed -n '2p'|awk -F= '{print $2}'
+then 
+	echo "T"
+else 
+	echo "F"
+fi
+
+
+
+查询文件信息：
+code=`ls asd`
+if [ $code = "asd" ]
+then 
+	ls asd
+else 
+	echo " "
+fi
+
+
+修改主机hostname
+sed -i 's/E=.*/E=ZDH#@ZDH1/' /etc/sysconfig/network
+
+hostname -v ZDH#@ZDH1 > /dev/null 2>&1;
+listV=`echo "$?"`;
+if [ $listV -eq 0 ];
+then echo "Result:0 T;";
+else hostname -b ZDH#@ZDH1 >/dev/null  2>&1;
+listV=`echo "$?"`;fi;
+if [ $listV -eq 0 ];
+then echo "Result:0 T;";
+else echo "Result:0 F;";fi;
+
+
+
+
+批量修改用户shell
+#!/bin/bash
+read -p "enter number: " num
+for ((i=1;i<=$num;i++));
+do
+        read -p "enter username: " user
+        alluser=`cat /etc/passwd|grep $user`
+        if [ -n "$alluser" ]
+        then
+                if grep -i "/bin/bash" <<< `cat /etc/passwd|grep -i $user|awk -F: '{print $NF}'`
+                then
+                        chsh -s /bin/false $user
+                        echo "T"
+                        continue
+                else
+                   	echo "error"
+                        continue
+                fi
+        else
+                echo "it's no exist"
+                continue
+        fi
+done
+
+
+
+
+true >./ceshi.sh 清空文件内容
+
+
+
+
+
+
+
+
+批量创建用户，名字中不含特殊字符
+username=$1
+if [ -z $username ]
+then
+	echo "do not use number or illiege char"
+	exit
+else
+alluser=`cat /etc/passwd|awk -F: '{print $1}'|grep $username`
+        if [ -z "$alluser" ]
+        then
+                num=`echo "$username"|wc -L`
+                for ((j=1;j<=$num;j++));
+                do
+                        judge=`echo "$username"|cut -c $j`
+                        for i in 0 1 2 3 4 5 6 7 8 9 ! ~ # $ % & *
+                        do
+                                if [[ $judge = $i ]]
+                                then
+                                        echo "do not use number or illiege char"
+                                        exit
+                                else
+                                        continue
+                                 fi
+                        done
+                done
+         else
+                echo "it's exsit"
+                exit
+         fi
+fi
+useradd -m $username  2>/dev/null
+
+
+
+判断系统命令是否存在,存在就直接执行
+order="$1"
+command -v $1>/dev/null2>&1
+num=`echo "$?"`
+if [ $num -eq 0 ]
+then 
+	echo "`$order`"
+else 
+	echo "result:8 -bash:$order: command not found"
+fi
+
+
+
+检查登录提示-是否设置登录成功后警告Banner：
+num=`cat /etc/motd|grep -v "^#"|grep -v "^$"|wc -l`
+if [ $num -ge 0 ]
+then
+	echo "T"
+else
+	echo "F"
+fi
+num1=`cat /etc/motd|grep -v "^#"|grep -v "^$"|grep "Authorized users only. All activity may be monitored and reported"|wc -l`
+if [ $num1 -eq 0 ]
+then
+echo "Authorized users only. All activity may be monitored and reported" >> /etc/motd
+else
+	echo "T"
+fi
+
+
+
+/etc/login.defs文件中PASS_MAX_DAYS值不大于90
+#!/bin/bash
+
+num=`cat /etc/login.defs|grep -v '#'|grep 'PASS_MAX_DAYS'|awk '{print $2}'`
+
+
+if [ -n $num ]
+then
+	if [[ $num -ne 90 ]]
+
+	then
+    sed -i '/^PASS_MAX_DAYS/d' /etc/login.defs
+    
+		sed -i '/^PASS_MIN_LEN/iPASS_MAX_DAYS       90' /etc/login.defs
+
+	else
+		echo "T"
+	fi
+else
+	echo "PASS_MAX_DAYS       90" >> /etc/login.defs
+fi
+
+
+在匹配行前（后）添加文本
+#!/bin/bash
+num=`cat /etc/pam.d/system-auth|grep "remember"|sed -n '1p'|awk '{print $NF}'|awk -F= '{print $2}'`
+
+if [ -n "$num" ]
+then
+	if [ $num -ge 5 ]
+	then echo "T"
+	else    sed -i '/remember=./d' /etc/system-auth   
+		sed -i '/^password    requisite     pam_cracklib.so try_first_pass retry=3/apassword    sufficient    pam_unix.so sha512 shadow nullok try_first_pass use_authtok remember=5' /etc/pam.d/system-auth
+	fi
+else
+	sed -i '/^password    requisite     pam_cracklib.so try_first_pass retry=3/apassword    sufficient    pam_unix.so sha512 shadow nullok try_first_pass use_authtok remember=5' /etc/pam.d/system-auth
+fi	
+
+
+
+
+
+cat /etc/profile|grep -E -n 'TMOUT'|grep -v "^$"排除空白行
+
+
+
+用脚本注释配置文件
+#!/bin/bash
+num=`cat /etc/inittab|grep -E -n 'ctr|lalt'|awk -F: '{print $1}'`
+sed -i 's/^'$num'/#&/' test.sh
+
+
+
+
+case语句
+case `uname -s` in 
+Linux) 
+	case `cat /proc/version  | awk -F "(" '{print $4}' | awk '{print $1$2}'|sed 's/)//g'` in
+   RedHat)
+	echo `cat /etc/redhat-release  2>/dev/null | awk '{print "Result:4" " "$1$2";"}' `;;
+   SUSELinux)
+	echo "Result:4 SUSE;" ;
+esac;;
+esac
+
+
+
+
+
+
+多行修改
+count=`cat /etc/sysconfig/i18n|grep -i -E 'LANG="en_US.UTF-8"|SYSFONT="latarcyrheb-sun16"'|wc -l`;
+if [ $count -eq 2 ];
+then 
+	echo "T";
+else 
+	sed -i '/^LANG/d;/^SYSFONT/d;' /etc/sysconfig/i18n;echo -e 'LANG="en_US.UTF-8"\nSYSFONT="latarcyrheb-sun16"'>> /etc/sysconfig/i18n;
+fi;
+
+
+
+
+删除或锁定与设备运行、维护等工作无关的账号
+for name in lp uucp nobody games rpm smmsp nfsnobody; 
+do 
+	passwd -l $name; 
+done 
+for i in lp nobody uucp games rpm smmsp nfsnobody listen webservd nobody4 noaccess;      
+do chsh -s /bin/false $i; 
+done
+
+
+
+修改配置项数值
+#!/bin/bash
+num=`cat /etc/login.defs|grep -v '#'|grep 'PASS_MIN_DAYS'|awk '{print $2}'`
+if [[ $num -ne 90 ]]
+then
+    sed -i '/^PASS_MIN_DAYS/d' /etc/login.defs
+    sed -i '/^PASS_MIN_LEN/iPASS_MIN_DAYS       90' /etc/login.defs
+fi
+
+
+
+检查是否禁止icmp重定向
+#!/bin/bash
+a=`cat /etc/sysctl.conf |grep -v '#'|grep 'net.ipv4.conf.all.accept_redirects=0'|wc -l`
+if [ $a -eq 0 ]
+then	
+	echo "net.ipv4.conf.all.accept_redirects=0" >> /etc/sysctl.conf
+else
+	echo "it's finished"
+fi
+
+
+
+检查是否删除或锁定无关账号
+for name in lp uucp nobody games rpm smmsp nfsnobody; 
+do 
+	passwd -l $name; 
+done 
+for i in lp nobody uucp games rpm smmsp nfsnobody listen webservd nobody4 noaccess;    
+do chsh -s /bin/false $i; 
+2>/dev/null
+done
+
+
+
+
+修改文件多个内容
+#!/bin/bash
+if [ -f /etc/vsftpd.conf ]
+then
+        sed -i -e 's/write_enable=NO/write_enable=YES/; s/ls_recurse_enable=NO/ls_recurse_enable=YES/; s/local_umask=*/local_umask=022/; s/anon_umask=*/anon_umask=022/' /etc/vsftpd.conf
+else
+        if [ -f /etc/vsftpd/vsftpd.conf ]
+        then sed -i -e 's/write_enable=NO/write_enable=YES/; s/ls_recurse_enable=NO/ls_recurse_enable=YES/; s/local_umask=*/local_umask=022/; s/anon_umask=*/anon_umask=022/' /etc/vsftpd/vsftpd.conf
+        else
+                echo "it's not exist"
+        fi
+fi
+
+
+
+
+时区判断
+str1=Asia/Shanghai;
+str2=`cat /etc/sysconfig/clock|grep -v '#'|grep -i ZONE|uniq|awk -F= '{print $2}'|sed 's/"//g'`;
+if [[ $str1 = $str2 ]]
+then
+ 
+	echo "T;$str2"
+else
+ 
+	echo "F"
+fi
+
+
+查询文件系统
+df -Th|sed '/tmpfs/d'|awk '{print $2}'|sed '1d'
+
+
+提取信息合并成一行
+cat /etc/SuSE-release |sed -n '2,+1p'|awk -F '=' '{print $2}'|awk '{print $1}'|tr -s "\n" "."|sed 's/.$/\n/'
+
+yum源升级软件脚本：
+#!/bin/bash
+cd /etc/yum.repos.d
+echo ==================current version===================
+rpm -qa | grep openssh
+mkdir /etc/yum.repos.d/repobak
+mv /etc/yum.repos.d/*.* /etc/yum.repos.d/repobak
+wget -c -t 2 -T 10 --user repo --password redhat http://10.212.200.54/repo/rhel6.repo
+yum list | grep openssh
+yum -y update openssh*
+rpm -qa | grep openssh
+rm -rf /etc/yum.repos.d/rhel6.repo
+mv /etc/yum.repos.d/repobak/* /etc/yum.repos.d/
+rm -rf /etc/yum.repos.d/repobak
+
+
+
+
+标准输出和错误输出重定向到一个文件
+ls /opt/doc &> out.txt 
+
+
+查询账号详细信息
+#!/bin/bash
+read -p "enter the user's name: "  username
+cat /etc/passwd | awk " /$username/ "'{ print $1 }'
+
+检查ftp是否开启：
+str1=`ps -ef | grep vsftpd | grep -v grep|awk '{print $8}'`
+
+
+检查yum源是否为baseurl:
+#!/bin/bash
+str1="baseurl=ftp://ted:Ebupt_2013f@10.212.200.54/pub/RHEL/x64/6/Server"
+str2=`cat /etc/yum.repos.d/rhel6.repo|sed -n '3p'`
+#echo $srt1
+#echo $str2
+if [ $str1 = $str2 ]
+then
+        echo "correct"
+else
+        echo "wrong"
+fi
+
+
+
+
+网卡查询：
+for i in eth0 eth1 eth2 eth3 eth4; do ethtool -i $i; echo $i; done
+
+
+磁盘空间检查及网卡查询：
+df -h
+echo ""
+ifconfig |sed -n '2p'|awk '{print $1 $2}'
+
+
+修改密码：
+echo 'Patrol$123' | passwd --stdin patrol
+
+备份文件以日期命名：
+time=`date +%y%m%d`
+dd if=/etc/hosts of=/tmp/host"$time".bak
+
+/etc/ssh/sshd_config.$(date +%F).bak
+
+date -d "`ls -al --full-time test.sh | grep "^-"  | awk '{print $6,$7}'| awk -F . '{print $1}'`" +%s
+
+检查交换空间：
+free -m|sed -n '4p'|awk '{if ($2==0) print "swap=0";else print "swap="int($3*100/$2)}'
+
+sed -n '2,$p'从第二行开始显示至最后一行
+
+
+批量删除账号：
+#!/bin/bash
+for user in `cat /etc/passwd | grep -E -i 'userName1|userName2|userName3' | awk -F : '{print $1}'`
+do
+    	alluser=`cat /etc/passwd|grep $user`
+        if [ -n "$alluser"]
+        then
+	    userdel -r $user
+	else
+	    echo "it's not exist"
+	    continue
+	fi
+done
+
+批量新建账号：
+#!/bin/bash
+for user in userName1 userName2  userName3
+do
+        alluser=`cat /etc/passwd|grep $user`
+        if [ -z "$alluser" ]
+        then
+                useradd -m $user  2>/dev/null
+        else
+                echo "it's exsit"
+                continue
+        fi
+done
+
+
+批量修改账号密码：
+#!/bin/bash
+for user in userName1 userName2 userName3
+  do
+        alluser=`cat /etc/passwd|grep $user`
+        if [ -n "$alluser" ]
+        then
+                 echo 'redred' | passwd --stdin $user
+        else
+                echo "it's no exist"
+                continue
+        fi
+ done
+
+批量删除账号：
+#!/bin/bash
+for user in userName1 userName2 userName3
+do
+        alluser=`cat /etc/passwd|grep $user`
+        if [ -z "$alluser" ]
+        then
+           echo "$user already deleted"
+        else
+           userdel -r $user
+           continue
+        fi
+done
+
+
+获取文件权限：
+for i in `cat /etc/rsyslog.conf | sed -e '/^#/d' -e '/^$/d' | awk '(($2!~/@/)&&($2!~/*/)&&($2!~/-/)) {print $2}' | grep "/var/log"`;do ls -lh $i;done
+
+
+systemctl status firewalld.service
+防火墙
+)设定预设规则 
+systemctl start firewalld	redhat7.0启动防火墙命令
+iptables -P INPUT ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -P FORWARD DROP
+iptables -F 
+iptables -I/A INPUT -s 10.212.222.0/24 -p tcp --dport 4750 -j ACCEPT / DROP
+iptables -I/A INPUT -s 10.212.0.0/16 -p all --dport 4750 -j ACCEPT / DROP	添加策略
+iptables -D INPUT -s 192.168.0.3 -p tcp --dport 22 -j ACCEPT / DROP	删除策略
+iptables-save			保存
+iptables -L INPUT --line-numbers
+iptables -D INPUT 3	意思是删除第3条规则
+
+iptables -A INPUT -p tcp --dport 80 -j DROP
+
+
+
+linux主机防火墙初始设置：
+iptables -A INPUT -i eth+ -p icmp --icmp-type 8 -j ACCEPT
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A INPUT -s 210.83.66.74 -p tcp --dport 27017:27018 -j ACCEPT
+iptables -A INPUT -s 180.110.213.14 -p tcp --dport 27017:27018 -j ACCEPT
+iptables -I INPUT -s 10.0.0.0/8 -p tcp --dport 27017:27018 -j ACCEPT
+iptables -A INPUT -s 210.83.66.74 -p tcp --dport 3306 -j ACCEPT
+iptables -A INPUT -s 180.110.213.14 -p tcp --dport 3306 -j ACCEPT
+iptables -A INPUT -s 10.0.0.0/8 -p tcp --dport 3306 -j ACCEPT
+iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+iptables -A INPUT -p tcp --dport 8086 -j ACCEPT
+iptables -A INPUT -p tcp --dport 8888 -j ACCEPT
+iptables -A INPUT -p tcp --dport 873 -j ACCEPT
+iptables -A INPUT -p udp --dport 123 -j ACCEPT
+iptables -A INPUT -p udp --dport 53 -j ACCEPT
+iptables -A INPUT -p tcp --dport 8088 -j ACCEPT
+iptables -I INPUT -s 114.55.10.36 -p tcp --sport 27017 -j ACCEPT
+iptables -A INPUT -p all -j DROP
+
+service iptables save
+chkconfig iptables on

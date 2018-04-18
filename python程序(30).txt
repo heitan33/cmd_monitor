@@ -1,0 +1,1484 @@
+numpy,pandas:
+import pandas
+import pandas_datareader
+sym = "BABA"
+finace = pandas_datareader.DataReader(sym, "yahoo", start="2015/11/11")
+print finace.tail(30)
+import matplotlib.pyplot as plt
+plt.plot(finace.index,finace["Open"])
+plt.show()
+
+
+
+
+
+
+锁定文件写入：
+import os,re,sys,stat
+
+def lock():
+	for a,b,c in os.walk('/root/server'):
+		path = a
+		regex = re.compile('.*/logs')
+		dirs = regex.findall(path)
+		for dir in dirs:
+			dir = ''.join(dir)
+			os.environ['dir'] = str(dir)
+			print dir
+			os.system("chmod 755 $dir")
+
+lock()
+
+
+python多线程中args用来传参
+
+python中有两个很好用的函数 decode() 和 encode()
+
+decode(‘utf-8’) 是从utf-8编码转换成unicode编码，当然括号里也可以写'gbk'
+encode('gbk') 是将unicode编码编译成gbk编码，当然括号里也可以写'utf-8'
+
+假如我知道一串编码是用utf-8编写的，怎么转成gbk呢
+[python] view plain copy
+s.decode('utf-8').encode('gbk')  
+
+
+
+tomcat监听：
+# -*- coding: utf-8 -*-
+import os
+import smtplib,commands,time,subprocess
+from email.mime.text import MIMEText
+from email.header import Header
+import threading
+
+spam = ['8080','8081','8082','8083','8084']
+global port,ip
+ip='121.40.115.131'
+receivers = ['yyy3988@qq.com']
+
+def action():
+	global port
+	while True:
+		for port in spam:
+			tomcat(port)
+
+
+def tomcat(port):
+#	print(port)
+	while True:
+		os.environ['port'] = str(port)
+		targ = commands.getoutput("lsof -i :$port")
+		if 'LISTEN' not in targ:
+			warn5_mail()	
+			while True:
+				port = commands.getoutput("lsof -i :$port")
+				time.sleep(30)
+				if 'LISTEN' not in port:
+					continue
+				else:
+					recovery5_mail()
+					break
+		else:
+			time.sleep(3)
+			break
+
+
+def main():
+	global port
+	action()
+
+
+def warn5_mail():
+	global port
+        mail_host="smtp.ym.163.com"
+        mail_user="wangb@hadlinks.com"
+        mail_pass="wb19911010"
+        message = MIMEText('%s tomcat%s服务停止'%(ip,port),'plain','utf-8')
+        message['From'] = Header("tech")
+        message['To'] = Header("wangb")
+        subject = '%s端口没有监听'%port
+        message['subject']= Header(subject,'utf-8')
+        try:
+                smtpObj = smtplib.SMTP()
+                smtpObj.connect(mail_host,25)
+                state=smtpObj.login(mail_user,mail_pass)
+                if state[0] == 235:
+                        smtpObj.sendmail('wangb@hadlinks.com',receivers,message.as_string())
+                        print ("success")
+                else:
+                        smtpObj.quit()
+        except  smtplib.SMTPException,e:
+                print e
+
+
+def recovery5_mail():
+	global port
+        mail_host="smtp.ym.163.com"
+        mail_user="wangb@hadlinks.com"
+        mail_pass="wb19911010"
+        message = MIMEText('%s %s端口正常'%(ip,port),'plain','utf-8')
+        message['From'] = Header("tech")
+        message['To'] = Header("wangb")
+        subject = '%s端口已正常监听'%port
+        message['subject']= Header(subject,'utf-8')
+        try:
+                smtpObj = smtplib.SMTP()
+                smtpObj.connect(mail_host,25)   
+                state=smtpObj.login(mail_user,mail_pass)
+                if state[0] == 235:
+                        smtpObj.sendmail('wangb@hadlinks.com',receivers,message.as_string())
+                        print ("success")
+                else:
+                        smtpObj.quit()
+        except  smtplib.SMTPException,e:
+                print e
+
+
+if __name__ == "__main__":
+	main()
+
+
+
+批量主机上传：
+#!/bin/python
+import pexpect,sys,os
+spam = {'121.40.115.131':'HadLinks88988','120.26.109.144':'HaiDaWuLian88988'}
+
+def main():
+	global k,v
+	for k,v in spam.items():
+		k=str(k)
+		v=str(v)
+		up()
+
+def up():
+	try:		
+		child=pexpect.spawn('scp /root/cli.py root@%s:/tmp/rsc.tar.gz' %(k))	
+	        index=child.expect(['(?i)yes','(?i)[Pp]assword',pexpect.EOF,pexpect.TIMEOUT])
+		if (index==0):
+			child.sendline('yes')
+			index1=child.expect(['(?i)[Pp]assword',pexpect.EOF,pexpect.TIMEOUT])
+			if (index1==0):
+				child.sendline('%s' %(v))  
+				child.expect('#')
+				child.close(force=True)			
+
+	        if (index==1):
+	                child.sendline('%s' %(v))	
+			child.expect('#')
+			child.close(force=True)
+
+	except pexpect.exceptions.EOF,e:
+		pass
+    
+if __name__== "__main__":
+	main()
+
+
+
+
+
+
+自动部署tomcat:
+
+# -*- coding: utf-8 -*-
+import subprocess,os,sys,fileinput
+import commands,shutil
+#os.system('mkdir /root/html/'+sys.argv[2]+'/files -pv')
+os.makedirs(r'/root/html/'+sys.argv[3]+'/files')												##站点目录
+	
+child = subprocess.Popen('yum install pcre* -y',shell=True)
+child1 = subprocess.Popen('yum install openssl* -y',shell=True)
+child.wait()
+child1.wait()
+print 'parent process'
+
+child2=subprocess.Popen('tar -zxvf /root/nginx-1.10.2.tar.gz -C /root',shell=True)
+child2.wait()
+#os.system("cd /root/nginx-1.10.2")
+child3=subprocess.Popen('cd /root/nginx-1.10.2 &&  ./configure --prefix=/usr/local/nginx/ --with-http_ssl_module  &&  make  && make install',shell=True)
+#child3=os.system('./configure --prefix=/usr/local/nginx/ --with-http_ssl_module && make && make install')
+child3.wait()
+
+for words in fileinput.input('/root/nginx.txt',backup='.bak',inplace=1):
+	word= words.rstrip().replace('argv1',sys.argv[1]).replace('argv3',sys.argv[3])					##ip，站点目录
+	with open('/root/nginx.conf','a+') as r:
+		r.write(word)
+		r.write('\n')	
+	r.close()
+
+#os.system('mv /usr/local/nginx/conf/nginx.conf /usr/local/nginx/conf/nginx.conf.bak')
+os.rename("/usr/local/nginx/conf/nginx.conf","/usr/local/nginx/conf/nginx.conf.bak")
+with open('/usr/local/nginx/conf/nginx.conf','a+') as f:
+	with open('/root/nginx.conf') as n:
+		content = n.readlines()
+		for line in content:
+			f.write(line)
+#			f.write('\n')
+	n.close()
+	f.close()
+	
+#os.system('touch /usr/local/nginx/conf/proxy.conf')
+os.mknod("/usr/local/nginx/conf/proxy.conf")
+with open('/usr/local/nginx/conf/proxy.conf','a+') as p:
+	with open('/root/proxy.txt') as q:
+        	content = q.readlines()
+        	for line in content:
+                	p.write(line)
+ #               	p.write('\n')
+	q.close()
+	p.close()
+#os.system('mv -f /root/nginx.txt.bak /root/nginx.txt')
+os.rename("/root/nginx.txt.bak","/root/nginx.txt")
+
+
+
+#os.makedirs(r'/root/html/'+sys.argv[2]+'/files')
+child2=subprocess.Popen('tar -zxvf /root/apache-tomcat-8.0.39.tar.gz -C /root',shell=True)
+child2.wait()
+#os.rename("/root/apache-tomcat-8.0.39/bin/catalina.sh","/root/apache-tomcat-8.0.39/bin/catalina.sh.bak")
+shutil.move("/root/catalina.sh","/root/apache-tomcat-8.0.39/bin/catalina.sh")
+shutil.move("/root/server.xml","/root/apache-tomcat-8.0.39/conf/server.xml")
+os.system("chmod 755 /root/apache-tomcat-8.0.39/bin/catalina.sh")
+os.system("chmod 755 /root/apache-tomcat-8.0.39/conf/server.xml")
+# for words in fileinput.input('/root/apache-tomcat-8.0.39/bin/catalina.sh',backup='.bak',inplace=1):
+# 	word= words.rstrip().replace('argv1',sys.argv[1]).replace('argv2',sys.argv[2])
+# 	with open('/root/nginx.conf','a+') as r:
+# 		r.write(word)
+# 		r.write('\n')	
+# 	r.close()
+
+# os.rename("/root/apache-tomcat-8.0.39/bin/catalina.sh.bak","/root/apache-tomcat-8.0.39/bin/catalina.sh")
+
+
+
+for words in fileinput.input('/root/apache-tomcat-8.0.39/conf/server.xml',backup='.bak',inplace=1):
+	word= words.rstrip().replace('argv1',sys.argv[1]).replace('argv2',sys.argv[3]).replace('argv3',sys.argv[2])   ##ip 站点目录  域名
+	with open('/root/apache-tomcat-8.0.39/conf/server.xml.bak1','a+') as r:
+		r.write(word)
+		r.write('\n')	
+	r.close()
+
+os.rename("/root/apache-tomcat-8.0.39/conf/server.xml.bak1","/root/apache-tomcat-8.0.39/conf/server.xml")
+
+child4=subprocess.Popen('tar -zxvf /root/cronolog-1.6.2.tar.gz -C /root',shell=True)
+child4.wait()
+#os.system("cd /root/nginx-1.10.2")
+child4=subprocess.Popen('cd cronolog-1.6.2/ && ./configure && make && make install ',shell=True)
+#child3=os.system('./configure --prefix=/usr/local/nginx/ --with-http_ssl_module && make && make install')
+child4.wait()
+
+
+
+服务器监控：
+# -*- coding: utf-8 -*-
+import smtplib,commands,time,subprocess
+from email.mime.text import MIMEText
+from email.header import Header
+import os
+import threading
+global receivers
+receivers = ['yyy3988@qq.com','xbwen@hadlinks.com']
+
+#ip=commands.getstatusoutput("ip addr|grep eth1|grep inet|awk '{print $2}'")
+#ip=ip[1]
+#ip=''.join(ip)
+
+output = subprocess.Popen('curl ifconfig.me',stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
+output.wait()
+ip=output.stdout.read()
+
+zoo = subprocess.Popen('ls zookeeper*',stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
+zoo.wait()
+z = output.stdout.read()
+
+def cpu_stat():
+	global i,cpu
+	i=0
+	while True:
+		cpu=commands.getoutput("iostat|sed -n '3,4p'|awk '{print $NF}'|sed -n '2p'")
+		time.sleep(10)
+		#cpu=os.system("iostat|sed -n '3,4p'|awk '{print $NF}'|sed -n '2p'")
+		if float(cpu) < 60:
+			print ("......")
+			i=i+1	
+			print(i)
+			if(i==3):
+				print("WARNING-cpu")
+				warn_mail()
+				while i==3:
+					cpu=commands.getoutput("iostat|sed -n '3,4p'|awk '{print $NF}'|sed -n '2p'")
+					time.sleep(10)
+					if float(cpu) >=60:
+						time.sleep(30)
+						i=0
+						recovery_mail()
+						break
+					else:
+						continue
+			else:
+				pass
+		else:
+			i=0
+#			continue
+#		time.sleep(30)
+#		continue
+
+
+def hardware_stat():
+	global di,nf
+	di=0
+	while True:
+		nf=commands.getoutput("iostat|grep vdb|awk '{print $4}'")	
+		time.sleep(10)	
+		try:	
+			if float(nf) >= 500:
+				print ("......")
+				di=di+1
+				print(di)
+				if(di==3):
+					print("WARNING-diskIO")
+					warn1_mail()
+					while di==3:
+						nf=commands.getoutput("iostat|grep vdb|awk '{print $4}'")
+						time.sleep(10)
+						if float(nf) < 500:
+							time.sleep(30)
+							di=0
+							recovery1_mail
+							break
+						else:
+							continue
+				else:
+					pass	
+			else:	
+				di=0
+#			time.sleep(30)
+		except:
+			continue
+
+
+def disk_stat():
+	global disk
+	while True:
+		try:
+			disk=commands.getoutput("df -h|awk '{print $5}'|sed '1d'|xargs")
+			list1 = disk.split(" ")
+#			print list1
+			time.sleep(10)
+			for dev in list1:
+#				print dev
+				newint = int(dev.strip("%"))
+#				print newint
+				if newint >=85:
+#					print ("success!!!!!!!!!!!")
+					warn1_mail()
+					while True:
+#						print ("super!!")
+						judge=1
+						disk2 = commands.getoutput("df -h|awk '{print $5}'|sed '1d'|xargs")
+						list2 = disk2.split(" ")
+						for dev2 in list2:
+							newint2 = int(dev2.strip("%"))
+							if newint2 < 85:
+								pass
+							else:
+					#			print ("super!!!super!!!!")
+								judge=0
+								break
+
+						if judge==1:
+							break
+						else:
+							pass
+
+					recovery1_mail()
+					break
+				else:
+					pass
+		except:
+			continue
+		
+
+def free_stat():
+	global fe,buff
+	fe=0
+	while True:
+		buff=commands.getoutput("free -m|sed '1d'|grep buffers|awk '{print $4}'")	
+		time.sleep(10)
+		if float(buff) <= 1500:
+			print ("......")
+			fe=fe+1
+			print(fe)
+			if(fe==3):
+				print("WARNING-memory")
+				warn2_mail()
+				while fe==3:
+					buff=commands.getoutput("free -m|sed '1d'|grep buffers|awk '{print $4}'")	
+					time.sleep(10)
+					if  float(buff) > 1500:
+						time.sleep(30)
+						recovery2_mail()
+						fe=0
+						break
+					else:
+						continue
+			else:
+				pass	
+		else:	
+			fe=0
+#		time.sleep(30)
+		continue
+
+
+def load_stat():
+	global load,lo
+	lo=0
+	while True:
+		try:
+			load=commands.getoutput("uptime|awk -F, '{print $NF}'")
+			time.sleep(10)
+#		float(load)	
+			if float(load) >= 3:
+#				print("WARNING-loaded")
+				lo=lo+1
+				if lo==1:
+					print("WARNING-Loaded")
+					warn3_mail() 
+					while lo == 1:
+						load=commands.getoutput("uptime|awk -F, '{print $NF}'")
+						time.sleep(10)
+						if float(load) < 3:
+							time.sleep(10)
+							recovery3_mail()
+							lo=0
+						else:
+							continue
+				else:
+					pass
+		except:	
+#		time.sleep(30)
+			continue
+
+
+def recovery_mail():
+	mail_host="smtp.ym.163.com"
+	mail_user="wangb@hadlinks.com"
+	mail_pass="wb19911010"
+#sender = 'from@runoob.com'
+#sender= 'pop.ym.163.com'
+	message = MIMEText('%s CPU空闲率恢复正常 %s'%(ip,cpu),'plain','utf-8')
+	message['From'] = Header("tech")
+	message['To'] = Header("wangb")
+	subject = 'CPU使用率恢复正常'
+	message['subject']= Header(subject,'utf-8')
+	try:
+		smtpObj = smtplib.SMTP()
+		smtpObj.connect(mail_host,25)	
+		state=smtpObj.login(mail_user,mail_pass)
+		if state[0] == 235:
+#	smtpObj.sendmail(sender, receivers, message)
+			smtpObj.sendmail('wangb@hadlinks.com',receivers,message.as_string())
+			print ("success")
+		else:
+			smtpObj.quit()
+	except	smtplib.SMTPException,e:
+		print e
+
+
+def recovery1_mail():
+	mail_host="smtp.ym.163.com"
+	mail_user="wangb@hadlinks.com"
+	mail_pass="wb19911010"
+#sender = 'from@runoob.com'
+#sender= 'pop.ym.163.com'
+	message = MIMEText('%s 硬盘恢复正常 %s'%(ip,newint),'plain','utf-8')
+	message['From'] = Header("tech")
+	message['To'] = Header("wangb")
+	subject = '硬盘恢复正常'
+	message['subject']= Header(subject,'utf-8')
+	try:
+		smtpObj = smtplib.SMTP()
+		smtpObj.connect(mail_host,25)	
+		state=smtpObj.login(mail_user,mail_pass)
+		if state[0] == 235:
+#	smtpObj.sendmail(sender, receivers, message)
+			smtpObj.sendmail('wangb@hadlinks.com',receivers,message.as_string())
+			print ("success")
+		else:
+			smtpObj.quit()
+	except	smtplib.SMTPException,e:
+		print e
+
+
+def recovery2_mail():
+	mail_host="smtp.ym.163.com"
+	mail_user="wangb@hadlinks.com"
+	mail_pass="wb19911010"
+#sender = 'from@runoob.com'
+#sender= 'pop.ym.163.com'
+	message = MIMEText('%s 内存使用率恢复正常 %s'%(ip,buff),'plain','utf-8')
+	message['From'] = Header("tech")
+	message['To'] = Header("wangb")
+	subject = '内存使用率恢复正常'
+	message['subject']= Header(subject,'utf-8')
+	try:
+		smtpObj = smtplib.SMTP()
+		smtpObj.connect(mail_host,25)	
+		state=smtpObj.login(mail_user,mail_pass)
+		if state[0] == 235:
+#	smtpObj.sendmail(sender, receivers, message)
+			smtpObj.sendmail('wangb@hadlinks.com',receivers,message.as_string())
+			print ("success")
+		else:
+			smtpObj.quit()
+	except	smtplib.SMTPException,e:
+		print e
+
+def recovery3_mail():
+	mail_host="smtp.ym.163.com"
+	mail_user="wangb@hadlinks.com"
+	mail_pass="wb19911010"
+#sender = 'from@runoob.com'
+#sender= 'pop.ym.163.com'
+	message = MIMEText('%s 负载恢复正常 %s'%(ip,load),'plain','utf-8')
+	message['From'] = Header("tech")
+	message['To'] = Header("wangb")
+	subject = '负载恢复正常'
+	message['subject']= Header(subject,'utf-8')
+	try:
+		smtpObj = smtplib.SMTP()
+		smtpObj.connect(mail_host,25)	
+		state=smtpObj.login(mail_user,mail_pass)
+		if state[0] == 235:
+#	smtpObj.sendmail(sender, receivers, message)
+			smtpObj.sendmail('wangb@hadlinks.com',receivers,message.as_string())
+			print ("success")
+		else:
+			smtpObj.quit()
+	except	smtplib.SMTPException,e:
+		print e
+
+
+def recovery4_mail():
+	mail_host="smtp.ym.163.com"
+	mail_user="wangb@hadlinks.com"
+	mail_pass="wb19911010"
+#sender = 'from@runoob.com'
+#sender= 'pop.ym.163.com'
+	message = MIMEText('%s 磁盘使用率恢复正常 %s'%(ip,dev2),'plain','utf-8')
+	message['From'] = Header("tech")
+	message['To'] = Header("wangb")
+	subject = '磁盘使用率恢复正常'
+	message['subject']= Header(subject,'utf-8')
+	try:
+		smtpObj = smtplib.SMTP()
+		smtpObj.connect(mail_host,25)	
+		state=smtpObj.login(mail_user,mail_pass)
+		if state[0] == 235:
+#	smtpObj.sendmail(sender, receivers, message)
+			smtpObj.sendmail('wangb@hadlinks.com',receivers,message.as_string())
+			print ("success")
+		else:
+			smtpObj.quit()
+	except	smtplib.SMTPException,e:
+		print e
+
+
+
+def warn_mail():
+	mail_host="smtp.ym.163.com"
+	mail_user="wangb@hadlinks.com"
+	mail_pass="wb19911010"
+#sender = 'from@runoob.com'
+#sender= 'pop.ym.163.com'
+#	receivers = ['yyy3988@qq.com','xbwen@hadlinks.com']
+	message = MIMEText('%s CPU空闲率过低 %s'%(ip,cpu),'plain','utf-8')
+	message['From'] = Header("tech")
+	message['To'] = Header("wangb")
+	subject = 'CPU使用率过高'
+	message['subject']= Header(subject,'utf-8')
+	try:
+		smtpObj = smtplib.SMTP()
+		smtpObj.connect(mail_host,25)	
+		state=smtpObj.login(mail_user,mail_pass)
+		if state[0] == 235:
+#	smtpObj.sendmail(sender, receivers, message)
+			smtpObj.sendmail('wangb@hadlinks.com',receivers,message.as_string())
+			print ("success")
+		else:
+			smtpObj.quit()
+	except	smtplib.SMTPException,e:
+		print e
+
+
+def warn1_mail():
+	mail_host="smtp.ym.163.com"
+	mail_user="wangb@hadlinks.com"
+	mail_pass="wb19911010"
+#sender = 'from@runoob.com'
+#sender= 'pop.ym.163.com'
+#	receivers = ['yyy3988@qq.com']
+	message = MIMEText('%s 磁盘用量过高 %s'%(ip,newint),'plain','utf-8')
+	message['From'] = Header("tech")
+	message['To'] = Header("wangb")
+	subject = '磁盘用量过高'
+	message['subject']= Header(subject,'utf-8')
+	try:
+		smtpObj = smtplib.SMTP()
+		smtpObj.connect(mail_host,25)	
+		state=smtpObj.login(mail_user,mail_pass)
+		if state[0] == 235:
+#	smtpObj.sendmail(sender, receivers, message)
+			smtpObj.sendmail('wangb@hadlinks.com',receivers,message.as_string())
+			print ("success")
+		else:
+			smtpObj.quit()
+	except	smtplib.SMTPException,e:
+		print e		
+
+
+def warn2_mail():
+	mail_host="smtp.ym.163.com"
+	mail_user="wangb@hadlinks.com"
+	mail_pass="wb19911010"
+#sender = 'from@runoob.com'
+#sender= 'pop.ym.163.com'
+#	receivers = ['yyy3988@qq.com']
+	message = MIMEText('%s 内存使用率过高 %s '%(ip,buff),'plain','utf-8')
+	message['From'] = Header("tech")
+	message['To'] = Header("wangb")
+	subject = '内存使用率过高'
+	message['subject']= Header(subject,'utf-8')
+	try:
+		smtpObj = smtplib.SMTP()
+		smtpObj.connect(mail_host,25)	
+		state=smtpObj.login(mail_user,mail_pass)
+		if state[0] == 235:
+#	smtpObj.sendmail(sender, receivers, message)
+			smtpObj.sendmail('wangb@hadlinks.com',receivers,message.as_string())
+			print ("success")
+		else:
+			smtpObj.quit()
+	except	smtplib.SMTPException,e:
+		print e		
+
+
+def warn3_mail():
+	mail_host="smtp.ym.163.com"
+	mail_user="wangb@hadlinks.com"
+	mail_pass="wb19911010"
+#sender = 'from@runoob.com'
+#sender= 'pop.ym.163.com'
+#	receivers = ['yyy3988@qq.com']
+	message = MIMEText('%s 负载过高 %s'%(ip,load),'plain','utf-8')
+	message['From'] = Header("tech")
+	message['To'] = Header("wangb")
+	subject = '负载过高'
+	message['subject']= Header(subject,'utf-8')
+	try:
+		smtpObj = smtplib.SMTP()
+		smtpObj.connect(mail_host,25)	
+		state=smtpObj.login(mail_user,mail_pass)
+		if state[0] == 235:
+#	smtpObj.sendmail(sender, receivers, message)
+			smtpObj.sendmail('wangb@hadlinks.com',receivers,message.as_string())
+			print ("success")
+		else:
+			smtpObj.quit()
+	except	smtplib.SMTPException,e:
+		print e		
+
+
+def warn4_mail():
+	mail_host="smtp.ym.163.com"
+	mail_user="wangb@hadlinks.com"
+	mail_pass="wb19911010"
+#sender = 'from@runoob.com'
+#sender= 'pop.ym.163.com'
+#       receivers = ['yyy3988@qq.com']
+	message = MIMEText('%s 磁盘使用率过高 %s'%(ip,dev),'plain','utf-8')
+	message['From'] = Header("tech")
+	message['To'] = Header("wangb")
+	subject = '磁盘使用率过高'
+	message['subject']= Header(subject,'utf-8')
+	try:
+		smtpObj = smtplib.SMTP()
+		smtpObj.connect(mail_host,25)
+		state=smtpObj.login(mail_user,mail_pass)
+		if state[0] == 235:
+			smtpObj.sendmail('wangb@hadlinks.com',receivers,message.as_string())
+			print ("success")
+		else:
+			smtpObj.quit()
+	except  smtplib.SMTPException,e:
+		print e
+
+
+def zookeeper():
+	if z != "":	
+		while True:
+			port = commands.getoutput("lsof -i :2181")
+			if port == "":
+				warn5_mail()
+				print("email")
+				while True:
+					port = commands.getoutput("lsof -i :2181")
+					time.sleep(10)
+					if port == "":
+						continue
+					else:
+						recovery5_mail()
+						break
+			else:
+				time.sleep(10)
+				continue
+	else:
+		pass
+
+def warn5_mail():
+	mail_host="smtp.ym.163.com"
+	mail_user="wangb@hadlinks.com"
+	mail_pass="wb19911010"
+	message = MIMEText('%s zookeeper服务停止'%ip,'plain','utf-8')
+	message['From'] = Header("tech")
+	message['To'] = Header("wangb")
+	subject = '2181端口没有监听'
+	message['subject']= Header(subject,'utf-8')
+	try:
+		smtpObj = smtplib.SMTP()
+		smtpObj.connect(mail_host,25)	
+		state=smtpObj.login(mail_user,mail_pass)
+		if state[0] == 235:
+			smtpObj.sendmail('wangb@hadlinks.com',receivers,message.as_string())
+			print ("success")
+		else:
+			smtpObj.quit()
+	except	smtplib.SMTPException,e:
+		print e
+
+def recovery5_mail():
+	mail_host="smtp.ym.163.com"
+	mail_user="wangb@hadlinks.com"
+	mail_pass="wb19911010"
+	message = MIMEText('%s 2181端口正常'%ip,'plain','utf-8')
+	message['From'] = Header("tech")
+	message['To'] = Header("wangb")
+	subject = '2181端口已正常监听'
+	message['subject']= Header(subject,'utf-8')
+	try:
+		smtpObj = smtplib.SMTP()
+		smtpObj.connect(mail_host,25)	
+		state=smtpObj.login(mail_user,mail_pass)
+		if state[0] == 235:
+			smtpObj.sendmail('wangb@hadlinks.com',receivers,message.as_string())
+			print ("success")
+		else:
+			smtpObj.quit()
+	except	smtplib.SMTPException,e:
+		print e	
+
+def main():
+
+	threading.Thread(target=cpu_stat).start()
+	threading.Thread(target=hardware_stat).start()
+	threading.Thread(target=free_stat).start()
+	threading.Thread(target=load_stat).start()
+	threading.Thread(target=disk_stat).start()	
+	threading.Thread(target=zookeeper).start()
+
+if __name__== "__main__":
+	main()
+
+
+
+
+
+
+日志删除（linux）:
+import os,re,time
+standard=time.time()
+standard=time.localtime(standard)
+standard=time.asctime(standard).split(' ')[2:3]
+standard=''.join(standard)
+standard=eval(standard)
+#while True:
+try:
+	for a,b,c in os.walk('/root'):
+#		print a
+		regex=re.compile('.*/logs')
+#		a = list(a)
+		dele=regex.findall(a)
+		dele=''.join(dele)
+#		print dele
+		for aa,bb,cc in os.walk(dele):
+#			print cc	
+			for line in cc:
+		#		print line
+				line=''.join(line)
+				abspath=dele+'/'+line
+		#		print abspath
+				t=os.stat(abspath)
+	 			t=time.localtime(t.st_ctime)
+	 			t=time.asctime(t).split(' ')[2:3]
+	 			t=''.join(t)
+				t=eval(t)
+				res=int (t) - int (standard)
+				if (res < 0):
+					if (int (t)-int (standard)+30 >=2):
+						if os.path.isfile(abspath):
+							os.unlink(abspath)
+							print 'delete'
+						else:
+							print ('next')
+							continue
+					else:
+						print ('next')
+						continue
+				else:
+					if (res>=2):
+						os.unlink(abspath)
+						print 'delete'
+					else:
+						print ('next')
+						continue
+except SyntaxError,e:
+ 	print(e)
+ 	exit()
+
+
+
+
+for循环使用参数限定范围：
+count=50
+nloops=range(count)
+for i in nloops:
+	print i
+
+
+
+
+日志删除（windows）：
+import os
+import time
+import re
+import sys
+standard=time.time()
+standard=time.localtime(standard)
+standard=time.asctime(standard).split(' ')[2:3]
+standard=''.join(standard)
+for Folderame,Subfolders,Filecontent in os.walk('Q:\\360Downloads\\Software\\'):
+ 		subfolders = Subfolders
+ 		for docs in subfolders:
+ 			print docs
+ 			path='Q:\\360Downloads\\Software\\' + docs
+ 			for Folderame1,Subfolders1,Filecontent1 in os.walk(path):
+ 				filecontent1=Filecontent1
+ 				for files in filecontent1:
+ 					filecontent1=''.join(filecontent1)
+ 					regex=re.compile('.*.txt')
+ 					dele=regex.findall(files)
+ 					dele=''.join(dele)
+ 					abspath= path +'\\' + dele
+ 					print abspath
+					t=os.stat(abspath)
+		 			t=time.localtime(t.st_ctime)
+		 			t=time.asctime(t).split(' ')[2:3]
+		 			t=' '.join(t)
+					res=int (t)-int (standard)
+					if (res < 0):
+						if (int (t)-int (standard)+30 >=2):
+							if os.path.isfile(abspath):
+								os.unlink(abspath)
+							else:
+								continue
+						else:
+							continue
+					else:
+						if (res>=2):
+							os.unlink(abspath)
+						else:
+							continue
+
+
+ssh自动登录：
+#!/usr/bin/env python
+import pexpect
+child=pexpect.spawn('ssh root@192.168.18.129')
+index=child.expect(['(!?)yes','(!?)password',pexpect.EOF,pexpect.TIMEOUT])
+if (index==0):
+        child.sendline('wb19911010')
+        child.expect('#')
+        child.sendline('ifconfig')
+        child.expect('#')
+        print child.before
+if (index==1):
+        child.sendline('wb19911010')
+        child.expect('#')
+        child.sendline('ls -l /tmp')
+        child.expect('#')
+        print child.before
+
+
+
+
+简单计算：
+# -*- coding:utf-8 -*-
+import os
+import sys
+#print u"请输入三个数:"
+while True:
+	try:
+		print u"请输入三个数:"
+		a= raw_input()
+		b= raw_input()
+		c= raw_input() 
+		a=eval(a)
+		b=eval(b)
+		c=eval(c)
+		res=a+b-c
+		print u"结果为 " + str (res)
+		print('\n')
+	except NameError,e:
+  		print(e)
+  		continue
+	except SyntaxError,e:
+ 		print(e)
+ 		continue
+
+
+
+
+cookie访问：
+# -*- coding: utf-8 -*-
+import urllib2
+import urllib
+import cookielib
+import re 
+auth_url = 'http://www.nowamagic.net/'
+home_url = 'http://www.nowamagic.net/';
+# 登陆用户名和密码
+data={
+  "username":"nowamagic",
+  "password":"pass"
+}
+# urllib进行编码
+post_data=urllib.urlencode(data)
+# 发送头信息
+ 
+headers ={
+ 
+  "Host":"www.nowamagic.net",
+"Referer": "http://www.nowamagic.net"
+}
+# 初始化一个CookieJar来处理Cookie
+ 
+cookieJar=cookielib.CookieJar()
+# 实例化一个全局opener
+ 
+opener=urllib2.build_opener(urllib2.HTTPCookieProcessor(cookieJar))
+ 
+# 获取cookie
+req=urllib2.Request(auth_url,post_data,headers)
+result = opener.open(req)
+# 访问主页 自动带着cookie信息
+result = opener.open(home_url)
+# 显示结果
+print result.read()
+
+
+
+
+#encoding=utf-8
+import urllib
+import urllib2
+import cookielib
+#声明一个CookieJar对象实例来保存cookie
+cookie = cookielib.CookieJar()
+#利用urllib2库的HTTPCookieProcessor对象来创建cookie处理器
+handler=urllib2.HTTPCookieProcessor(cookie)
+#通过handler来构建opener
+opener = urllib2.build_opener(handler)
+#此处的open方法同urllib2的urlopen方法，也可以传入request
+response = opener.open('http://weibo.com/')
+for item in cookie:
+    print 'Name = '+item.name
+    print 'Value = '+item.value
+
+
+
+人人网爬虫：
+#encoding=utf-8
+import urllib2
+import urllib
+import cookielib
+import re
+#def renrenBrower(url,user,password):
+    #登陆页面，可以通过抓包工具分析获得，如fiddler，wireshark
+x = 0
+login_page = "http://www.renren.com/PLogin.do"
+user='yyy3988@qq.com'
+password='86257433'
+url='http://www.renren.com/home'
+try:
+    #获得一个cookieJar实例
+    cj = cookielib.CookieJar()
+    #cookieJar作为参数，获得一个opener的实例
+    opener=urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+    #伪装成一个正常的浏览器，避免有些web服务器拒绝访问。
+    opener.addheaders = [('User-agent','Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)')]
+    #生成Post数据，含有登陆用户名密码。
+    header={"email":user,"password":password}
+    data = urllib.urlencode(header)
+    #以post的方法访问登陆页面，访问之后cookieJar会自定保存cookie
+    opener.open(login_page,data)
+    #以带cookie的方式访问页面
+    op=opener.open(url)
+    #读取页面源码
+    data= op.read()
+    reg = r'src="(.+?\.jpg)"'
+    imgre = re.compile(reg)
+    imglist = re.findall(imgre,data)
+    for imgurl in imglist:
+        urllib.urlretrieve(imgurl,'D:\\ceshi\\%s.jpg' % x)
+        x+=1
+#        return data
+except Exception,e:
+    print str(e)
+#访问某用户的个人主页，其实这已经实现了人人网的签到功能。
+
+
+
+
+
+游明星空爬虫：
+#coding=utf-8
+import urllib
+import urllib2
+import re
+x = 0
+for  num in range (2,21):
+	url='http://pic.gamersky.com/html/609016_'+str(num)+'.shtml'
+	user_agent = 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'
+#	values = {"username":"yyy3988@qq.com","password":"wangbei@19911010"}
+	headers = { 'User-Agent' : user_agent }
+#	data = urllib.urlencode(values)
+	request = urllib2.Request(url)
+	page = urllib2.urlopen(request)
+	html = page.read()
+#	print (html)
+#	reg = r'alt="游民星空" src="(.*\.jpg)"'
+	reg = r'src="(.+?\.jpg)"'
+	imgre = re.compile(reg)
+	imglist = imgre.findall(html)
+	for imgurl in imglist:
+		urllib.urlretrieve(imgurl,'D:\\ceshi\\%s.jpg' % x)
+		x+=1	
+
+
+
+百度贴吧爬虫：
+#coding=utf-8
+import urllib
+import urllib2
+import re
+x = 0
+for  num in range (1,10):
+	url='http://tieba.baidu.com/p/2460150866?pn='+str(num)
+	user_agent = 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'
+#	values = {"username":"yyy3988@qq.com","password":"wangbei@19911010"}
+	headers = { 'User-Agent' : user_agent }
+#	data = urllib.urlencode(values)
+	request = urllib2.Request(url)
+	page = urllib2.urlopen(request)
+	html = page.read()
+#	print (html)
+	reg = r'src="(.+?\.jpg)" pic_ext'
+	imgre = re.compile(reg)
+	imglist = re.findall(imgre,html)
+	for imgurl in imglist:
+		urllib.urlretrieve(imgurl,'D:\\ceshi\\%s.jpg' % x)
+		x+=1
+
+
+
+打印已有的yum源：
+import os
+import re
+import sys
+#path =os.path.exists('/etc/yum.repos.d/')
+path =os.path.exists(sys.argv[1])
+while path:
+#        for Folderame,Subfolders,Filecontent in os.walk('/etc/yum.repos.d/'):
+        for Folderame,Subfolders,Filecontent in os.walk(sys.argv[1]):
+                filecontent = Filecontent
+                for line in filecontent:
+                        with open('/etc/yum.repos.d/'+ line +'','r+') as f:
+                                content = f.read()
+                        regex = re.compile('baseurl=.*')
+                        result = regex.search(content)
+                        if result is None:
+                                continue
+                        r=result.group()
+#                       print(r)
+                        s=r.split('=')[1:]
+                        a=''.join(s)
+                        print (a)
+                sys.exit()
+print("Reslut:8 ERROR!")
+
+
+#!/bin/python
+import os
+import re
+import sys
+path =os.path.exists('/etc/yum.repos.d/')
+list1=[]
+while path:
+        for Folderame,Subfolders,Filecontent in os.walk('/etc/yum.repos.d/'):
+                filecontent = Filecontent
+                for line in filecontent:
+                        with open('/etc/yum.repos.d/'+ line +'','r+') as f:
+                                content = f.read()
+                        regex = re.compile('baseurl=.*')
+                        result = regex.search(content)
+                        if result is None:
+                                continue
+                        r=result.group()
+                        s=r.split('=')[1:]
+                        a=''.join(s)
+                        list1.append(a)
+                result='\n'.join(list1)
+                print('Result:4')
+                print(''+result+';')
+        sys.exit()
+print("Reslut:8 not found;")
+
+
+
+
+调用shell命令方法之一：
+#!/bin/python
+import os
+import commands
+output=commands.getoutput('df -h|awk \'{print $1}\'')
+print(output)
+
+
+查询目录包含的内容：
+import os
+import sys
+for filename in os.listdir(r'/etc'):
+        print (filename)
+
+
+查询目录包含的内容(包含子文件夹)：
+import os
+import re
+import sys
+for filename,sub,file in os.walk(r'/etc'):
+        print(filename)
+
+
+获取文件夹的绝对路径：
+#!/bin/python
+import sys
+import os
+for Folder,Subfolder,File in os.walk('/'):
+        content=Folder
+        if "yum.repos.d" in content:
+                print (content)
+        else:
+                continue
+
+
+
+获取文件绝对路径：
+#!/bin/python
+import sys
+import os
+for Folder,Subfolder,File in os.walk('/'):
+        path=Folder
+        content=' '.join(File)
+        if "test.py" == content:
+                print (""+path+"/"+content+"")
+        else:
+                continue
+
+
+获取文件权限：
+#!/bin/bash
+import os
+import pwd
+power=oct(os.stat('/etc/yum.repos.d/redhat.repo').st_mode)[4:]  \\oct进制转换，转为8进制
+print("Result:1 "+power+";")
+
+
+获取文件属主：
+#!/bin/bash
+import os
+import pwd
+stat=os.lstat('/etc/yum.repos.d/redhat.repo')
+uid=stat.st_uid
+pw=pwd.getpwuid(uid)
+user=pw.pw_name
+print (user)
+
+
+
+调用shell命令：
+os.system("echo \"Hello World\"")
+
+
+
+查询文件修改时间：
+import os
+import time
+import datetime
+statinfo=os.stat(r"C:\Users\hzhl\Desktop\ceshi.txt")
+t=statinfo.st_mtime
+p=time.localtime(t)
+date=time.strftime('%Y-%m-%d %H:%M:%S',p)
+print (date)
+
+
+#!/bin/python
+import os
+import time
+import datetime
+statinfo=os.stat(r"/etc/z.sh")
+t=statinfo.st_mtime
+p=time.localtime(t)
+date=time.strftime('%Y-%m-%d %H:%M:%S',p)
+print ("Reslut:7 "+date+";")
+print("Result:4 "+role+" "+str(cap)+" "+date+";")
+
+
+读取文件内容：
+#!/bin/python
+import os
+import sys
+with open('/etc/yp.conf','r') as f:
+        for content in f.readlines():
+                print(content),
+
+
+查询文件修改时间：
+#!/bin/python
+import os
+import sys
+time=os.path.getatime('/etc/yum/vars')
+print "Result:7 %s" %time,
+print ";"
+
+
+查询目录是否存在：
+#!/bin/python
+import os
+import sys
+path =os.path.exists('/etc/yum/vars')
+while True:
+        print('Result:0 T;')
+        sys.exit()
+
+
+
+乘法口诀表：
+import os
+import re
+import sys
+j = 1
+for i in range (1,10):
+	for j in range (0+i,10):
+		result = i * j
+		print (' ('+ str (i) + ') * ('+str (j)+')=(' + str (result) +')'),
+#		with open('D:\\ceshi.txt','a+') as f:
+#			old=sys.stdout
+#			sys.stdout=f
+#			print (' ('+ str (i) + ') * ('+str (j)+')=(' + str (result) +')'),
+		while j==9:
+			print('\n')
+			break
+#			sys.stdout=old
+
+
+
+
+
+
+
+遍历文件夹下的文件，提取指定内容
+# -*- coding: utf-8 -*-
+import os
+import re
+import sys
+for Folderame,Subfolders,Filecontent in os.walk('D:\\Lesson 1\\files'):
+	subfolders = Subfolders
+	for line in subfolders:
+#		print (line)
+		path = 'D:\\Lesson 1\\files\\'+ line + ''
+#		print (path)
+		for Folderame1,Subfolders1,Filecontent1 in os.walk('D:\\Lesson 1\\files\\'+ line + ''):
+				filecontent = Filecontent1
+				for line1 in filecontent:
+#					for line in content:
+#					print (line1)
+					with open('D:\\Lesson 1\\files\\'+ line + '\\'+ line1 +'','r+') as f:
+#						content = f.readlines()
+#						for line2 in content:
+							content = f.read()
+#							print (content)
+#					regex = re.compile('\'.*\@.*.\..*')
+					regex = re.compile('[0-9a-zA-Z]{0,19}@corp.netease.com')
+					hehe = regex.findall(content)
+#					print (hehe)
+					haha =''.join(hehe)
+					regex1 = re.compile('.*\.')
+					mingzi = regex1.search(line1)
+#					print (mingzi.group())
+					m=mingzi.group()[:-1]
+					n=m.decode('gbk').encode('utf-8')
+					line_d=line.decode('gbk').encode('utf-8')
+#					print (haha)
+					print (n)
+					with open('D:\\ceshi.txt','a+') as f:
+						f.write(line_d)
+						f.write("	")
+						f.write(n)
+						f.write("	")
+						f.write(haha)
+						f.write('\n')
+#					sys.exit()
+
+
+字符串连接：
+a = "hello"
+b = "world"
+c = str(a) + str (b)
+print (c)
+
+
+i = 'one'
+print ('jimmy five times ( '+ str(i) +' )')
+
+
+
+列表转字符串：
+（1）
+a = ['1','2','3','dd']
+b = ''.join(a)
+print (b)
+with open('C:\\Users\\hzhl\\Desktop\\ceshi.txt','a+') as f:
+	f.write(b)
+	f.write('\n')
+	f.close()
+
+（2）
+import os
+import sys
+a = ['1','2','3','dd']
+b = (str(a))
+#print (b)
+with open('C:\\Users\\hzhl\\Desktop\\ceshi.txt','a+') as f:
+	f.write(b)
+	f.write('\n')
+	f.close()
+
+
+
+
+while True:
+	print('who are you?')
+	name = raw_input()
+	if name != 'joe':
+		continue
+	print('hello,joe.what is the password?(it is a fish.)')
+	password = raw_input()
+	if password == 'swordfish':
+		break
+print('access granted')
+
+
+
+逐行读取文本内容：
+# -*- coding: utf-8 -*-
+import re
+import os
+with open('C:\\Users\\hzhl\\Desktop\\ceshi.txt','r+') as f:
+	content = f.readlines()
+	for line in content:
+#		print (line)
+		with open('C:\\Users\\hzhl\\Desktop\\ceshi2.txt','a+') as f:
+			f.write(line)
+			f.write('\n')
+
+
+
+
+读取目录下所有文件名称：
+import os
+def GetFileList(dir, fileList):    
+    newDir = dir
+    if os.path.isfile(dir):       
+        fileList.append(dir.decode('gbk'))    
+    elif os.path.isdir(dir):          
+        for s in os.listdir(dir):                      
+    #if s == "xxx":               
+    #continue            
+            newDir=os.path.join(dir,s)            
+            GetFileList(newDir, fileList)     
+    return fileList 
+list = GetFileList('D:\Lesson 1', [])
+for output in list:   
+    content = output   
+    f = open('test.txt','a+')
+    f.write(content)
+    f.write('\n')
+    f.close()
+
+
+
+修改时区配置文件：
+import re
+import os
+import sys
+with open('C:\\Users\\hzhl\\Desktop\\ceshi.txt','r+') as f:
+	content = f.read()
+regex = re.compile('.*ZONE')
+regex1 = re.compile('\=.*')
+hehe = regex.search(content)
+#print (hehe.group())
+haha = regex1.search(content)
+#print (haha.group())
+if haha.group() == '="Asia/Shanghai"':
+	print(hehe.group())
+	sys.exit()
+else:
+	z = '="Asia/Shanghai"\nUTC=true'
+	b = hehe.group() + regex.sub(z,hehe.group())
+#	print (b)
+	with open('C:\\Users\\hzhl\\Desktop\\ceshi.txt','w+') as f:
+		f.write(b)
+
+
+写入内容：
+import os,shutil
+import datetime
+f = open('D:\Lesson 1\Lesson 1.txt','r')
+content = f.read()
+f = open('test.txt','a+')
+f.write(content)
+f.write('\n')
+f.close()
+
+
+
+import os,shutil
+import datetime
+f = open('test.txt','a+')
+for filename in os.listdir(r'C:\windows'):
+	f.write(filename)
+	f.write('\n')
+f.close()
+
+
